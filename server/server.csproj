@@ -13,4 +13,17 @@
       <ProjectReference Include="..\services\services.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="log4net" Version="3.0.5-preview.2" />
+      <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.3" />
+ 
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="log4net.config">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+
 </Project>

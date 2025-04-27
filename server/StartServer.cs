@@ -2,11 +2,10 @@ using System.Configuration;
 using System.Net.Sockets;
 using System.Reflection;
 using Agentie_turism_transport_csharp.networking;
-using Agentie_turism_transport_csharp.persistence;
+using persistence;
 using log4net;
 using log4net.Config;
 using networking;
-using persistence;
 using services;
 
 
@@ -24,7 +23,7 @@ namespace server
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
             XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 			
-            log.Info("Starting chat server");
+            log.Info("Starting server");
             log.Info("Reading properties from app.config ...");
            int port = DEFAULT_PORT;
            String ip = DEFAULT_IP;
@@ -49,9 +48,9 @@ namespace server
            {
                log.Info("Port property not set. Using default value "+DEFAULT_IP);
            }
-           log.InfoFormat("Configuration Settings for database {0}",GetConnectionStringByName("chatDB"));
+           log.InfoFormat("Configuration Settings for database {0}",GetConnectionStringByName("turismDB"));
            IDictionary<String, string> props = new SortedList<String, String>();
-           props.Add("ConnectionString", GetConnectionStringByName("chatDB"));
+           props.Add("ConnectionString", GetConnectionStringByName("turismDB"));
            TripDBRepository tripRepo = new TripDBRepository(props);
            ReservationDBRepository reservationRepo = new ReservationDBRepository(props, tripRepo);
            SoftUserDBRepository userRepo = new SoftUserDBRepository(props);
@@ -59,7 +58,6 @@ namespace server
 
          
            log.DebugFormat("Starting server on IP {0} and port {1}", ip, port);
-			//SerialChatServer server = new SerialChatServer(ip,port, serviceImpl);
             JsonServer server = new JsonServer(ip,port, serviceImpl);
             server.Start();
             log.Debug("Server started ...");
@@ -71,7 +69,7 @@ namespace server
         static string GetConnectionStringByName(string name)
         {
             string returnValue = null;
-            var settings = ConfigurationManager.ConnectionStrings[name];
+            ConnectionStringSettings settings = ConfigurationManager.ConnectionStrings[name];
             if (settings != null)
             {
                 returnValue = settings.ConnectionString;

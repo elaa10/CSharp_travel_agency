@@ -1,6 +1,6 @@
 ﻿namespace model;
     
-public class Entity<T>{
-        public T Id { get; set; }
+public class Entity<ID>{
+        public ID Id { get; set; }
 }
 

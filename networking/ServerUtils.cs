@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 using log4net;
 
-namespace Agentie_turism_transport_csharp.networking;
+namespace networking;
 
 public abstract class AbstractServer
 {
@@ -39,10 +39,6 @@ public abstract class AbstractServer
         catch (Exception ex)
         {
             log.Error("Error in server: ", ex);
-        }
-        finally
-        {
-            server?.Stop();
         }
     }
 

@@ -57,6 +57,7 @@ public class ClientJsonWorker : IObserver
                     log.ErrorFormat("Error in worker (reading): {0}", e.Message);
                     if (e.InnerException != null)
                         log.ErrorFormat("Inner error: {0}", e.InnerException.Message);
+                    log.Error(e.StackTrace);
                 }
 
                 try

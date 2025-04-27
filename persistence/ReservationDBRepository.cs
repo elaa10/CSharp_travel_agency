@@ -1,8 +1,5 @@
 ﻿using log4net;
 using model;
-using System.Collections.Generic;
-using System.Data;
-using model;
 using persistence.interfaces;
 
 namespace persistence

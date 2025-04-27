@@ -65,10 +65,7 @@ public class ServerJsonProxy : IServices
                 string err = response.ErrorMessage;
                 throw new MyException(err);
             }
-            else
-            {
-                log.Info("Logged out");
-            }
+            log.Info("Logged out");
         }
 
         public IEnumerable<Trip> GetAllTrips()
@@ -227,6 +224,7 @@ public class ServerJsonProxy : IServices
 
         private void HandleUpdate(Response response)
         {
+            log.DebugFormat("handleUpdate called with {0}",response);
             if (response.Type == ResponseType.RESERVATION_MADE)
             {
                 Reservation reservation = JsonSerializer.Deserialize<Reservation>(response.Data.ToString());

@@ -1,25 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using System.Data;
 using System.Data.SQLite;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+using log4net;
 
 
 namespace persistence;
 
 public static class DBUtils
 {
-    private static IDbConnection _instance = null;
+    private static IDbConnection instance = null;
 
     public static IDbConnection GetConnection(IDictionary<string, string> props)
     {
-        if (_instance != null && _instance.State != ConnectionState.Closed) return _instance;
-        _instance = GetNewConnection(props);
-        _instance.Open();
-        return _instance;
+        if (instance == null && instance.State == System.Data.ConnectionState.Closed)
+        {
+            instance = GetNewConnection(props);
+            instance.Open();
+        }
+        return instance;
     }
 
     private static IDbConnection GetNewConnection(IDictionary<string, string> props)
@@ -32,28 +30,33 @@ public abstract class ConnectionFactory
 {
     protected ConnectionFactory() { }
 
-    private static ConnectionFactory _instance;
+    private static ConnectionFactory instance;
 
     public static ConnectionFactory GetInstance()
     {
-        if (_instance != null) return _instance;
-        var assembly = Assembly.GetExecutingAssembly();
-        var types = assembly.GetTypes();
-        foreach (var type in types)
+        if (instance == null)
         {
-            if (type.IsSubclassOf(typeof(ConnectionFactory)))
-                _instance = (ConnectionFactory)Activator.CreateInstance(type);
+            Assembly assem = Assembly.GetExecutingAssembly();
+            Type[] types = assem.GetTypes();
+            foreach (var type in types)
+            {
+                if (type.IsSubclassOf(typeof(ConnectionFactory)))
+                    instance = (ConnectionFactory)Activator.CreateInstance(type);
+            }
         }
-        return _instance;
+        return instance;
     }
     public abstract IDbConnection CreateConnection(IDictionary<string, string> props);
 }
 
 public class SQLiteConnectionFactory : ConnectionFactory
 {
+    private static readonly ILog log = LogManager.GetLogger(typeof(SQLiteConnectionFactory));
+
     public override IDbConnection CreateConnection(IDictionary<string, string> props)
     {
-        var connectionString = props["ConnectionString"];
+        String connectionString = props["ConnectionString"];
+        log.DebugFormat("creating ... sqlite connection for {0}", connectionString);
         Console.WriteLine(@"SQLite --- opens a connection to {0}", connectionString);
         return new SQLiteConnection(connectionString);
     }

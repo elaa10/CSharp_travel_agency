@@ -5,7 +5,7 @@ using model;
 using persistence;
 using persistence.interfaces;
 
-namespace Agentie_turism_transport_csharp.persistence
+namespace persistence
 {
     public class SoftUserDBRepository : ISoftUserRepository
     {

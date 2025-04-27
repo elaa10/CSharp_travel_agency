@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using log4net;
+﻿using log4net;
 using model;
 using persistence.interfaces;
 using services;
@@ -11,7 +10,7 @@ public class ServicesImpl : IServices
         private readonly ISoftUserRepository softUserRepo;
         private readonly ITripRepository tripRepo;
         private readonly IReservationRepository reservationRepo;
-        private readonly ConcurrentDictionary<long, IObserver> loggedSoftUsers;
+        private readonly IDictionary<long, IObserver> loggedSoftUsers;
 
         private static readonly ILog logger = LogManager.GetLogger(typeof(ServicesImpl));
 
@@ -20,72 +19,58 @@ public class ServicesImpl : IServices
             softUserRepo = softUserRepository;
             tripRepo = tripRepository;
             reservationRepo = reservationRepository;
-            loggedSoftUsers = new ConcurrentDictionary<long, IObserver>();
+            loggedSoftUsers = new Dictionary<long, IObserver>();
         }
 
         // -------------------- SOFT USER
 
         public SoftUser Login(string username, string password, IObserver softUserObserver)
         {
-            lock (this)
-            {
-                var loginUser = softUserRepo.FindByUsernameAndPassword(username, password);
+            var loginUser = softUserRepo.FindByUsernameAndPassword(username, password);
 
-                if (loginUser != null)
+            if (loginUser != null)
+            {
+                if (loggedSoftUsers.ContainsKey(loginUser.Id))
                 {
-                    if (loggedSoftUsers.ContainsKey(loginUser.Id))
-                    {
-                        throw new MyException("User already logged in.");
-                    }
-                    loggedSoftUsers.TryAdd(loginUser.Id, softUserObserver);
-                    logger.Info("User logged in: " + loginUser.username);
-                    return loginUser;
+                    throw new MyException("User already logged in.");
                 }
-                else
-                {
-                    throw new MyException("Authentication failed.");
-                }
+                loggedSoftUsers[loginUser.Id]= softUserObserver;
+                logger.Info("User logged in: " + loginUser.username);
             }
+            else
+            {
+                throw new MyException("Authentication failed.");
+            }
+            return loginUser;
         }
 
         public void Logout(SoftUser softUser, IObserver softUserObserver)
         {
-            lock (this)
-            {
-                if (!loggedSoftUsers.TryRemove(softUser.Id, out _))
-                {
-                    throw new MyException($"User {softUser.Id} is not logged in.");
-                }
-            }
+            IObserver loginUser = loggedSoftUsers[softUser.Id];
+            if(loginUser == null)
+                throw new MyException("User "+softUser.Id+" is not logged in.");
+            loggedSoftUsers.Remove(softUser.Id);
         }
 
         // -------------------- TRIP
 
         public IEnumerable<Trip> GetAllTrips()
         {
-            lock (this)
-            {
-                return tripRepo.FindAll();
-            }
+            return tripRepo.FindAll();
+           
         }
 
         public IEnumerable<Trip> SearchTripsByObjectiveAndTime(string objective, DateTime date, int startHour, int endHour)
         {
-            lock (this)
-            {
-                return tripRepo.FindTripsByObjectiveDateAndTimeRange(objective, date, startHour, endHour);
-            }
+            return tripRepo.FindTripsByObjectiveDateAndTimeRange(objective, date, startHour, endHour);
         }
 
         public Trip GetTripById(long id)
         {
-            lock (this)
-            {
-                return tripRepo.FindOne(id);
-            }
+            return tripRepo.FindOne(id);
         }
 
-        public void UpdateAvailableSeats(Trip trip, int newAvailableSeats)
+        private void UpdateAvailableSeats(Trip trip, int newAvailableSeats)
         {
             lock (this)
             {
@@ -98,23 +83,20 @@ public class ServicesImpl : IServices
 
         public void MakeReservation(string clientName, string clientPhone, int ticketCount, Trip trip)
         {
-            lock (this)
+            if (trip.availableSeats >= ticketCount)
             {
-                if (trip.availableSeats >= ticketCount)
-                {
-                    var reservation = new Reservation(clientName, clientPhone, ticketCount, trip);
-                    reservationRepo.Save(reservation);
-                    UpdateAvailableSeats(trip, trip.availableSeats - ticketCount);
+                var reservation = new Reservation(clientName, clientPhone, ticketCount, trip);
+                reservationRepo.Save(reservation);
+                UpdateAvailableSeats(trip, trip.availableSeats - ticketCount);
 
-                    foreach (var observer in loggedSoftUsers.Values)
-                    {
-                        observer.ReservationMade(reservation);
-                    }
-                }
-                else
+                foreach (var observer in loggedSoftUsers.Values)
                 {
-                    throw new MyException("Not enough available seats.");
+                    Task.Run(() => observer.ReservationMade(reservation));
                 }
+            }
+            else
+            {
+                throw new MyException("Not enough available seats.");
             }
         }
     }
