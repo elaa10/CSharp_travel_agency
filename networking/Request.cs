@@ -7,15 +7,16 @@ namespace networking;
 public class Request
 {
     public RequestType Type { get; set; }
-    public object Data { get; set; }
+    public SoftUser User { get; set; }
     
-    public SoftUserDTO User { get; set; }
+    public Trip Trip { get; set; }
     
-    public TripDTO Trip { get; set; }
+    public long TripId { get; set; }
     
-    public ReservationDTO Reservation { get; set; }
+    public Reservation Reservation { get; set; }
     
     public SearchTripDTO SearchTrip { get; set; }
+    
     
     
 }

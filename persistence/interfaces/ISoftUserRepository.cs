@@ -4,5 +4,5 @@ namespace persistence.interfaces;
 
 public interface ISoftUserRepository : IRepository<long, SoftUser>
 {
-    SoftUser FindByUsernameAndPassword(string username, string password);
+    public SoftUser FindByUsernameAndPassword(string username, string password);
 }

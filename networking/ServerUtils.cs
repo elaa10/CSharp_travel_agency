@@ -50,8 +50,7 @@ public abstract class ConcurrentServer : AbstractServer
     private static readonly ILog log = LogManager.GetLogger(typeof(AbstractServer));
     
     protected ConcurrentServer(string host, int port) : base(host, port)
-    {
-    }
+    {}
 
     public override void ProcessRequest(TcpClient client)
     {

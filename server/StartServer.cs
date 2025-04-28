@@ -6,6 +6,7 @@ using persistence;
 using log4net;
 using log4net.Config;
 using networking;
+using persistence.interfaces;
 using services;
 
 
@@ -51,17 +52,17 @@ namespace server
            log.InfoFormat("Configuration Settings for database {0}",GetConnectionStringByName("turismDB"));
            IDictionary<String, string> props = new SortedList<String, String>();
            props.Add("ConnectionString", GetConnectionStringByName("turismDB"));
-           TripDBRepository tripRepo = new TripDBRepository(props);
-           ReservationDBRepository reservationRepo = new ReservationDBRepository(props, tripRepo);
-           SoftUserDBRepository userRepo = new SoftUserDBRepository(props);
+           ITripRepository tripRepo = new TripDBRepository(props);
+           IReservationRepository reservationRepo = new ReservationDBRepository(props, tripRepo);
+           ISoftUserRepository userRepo = new SoftUserDBRepository(props);
            IServices serviceImpl = new ServicesImpl(userRepo, tripRepo, reservationRepo);
 
          
            log.DebugFormat("Starting server on IP {0} and port {1}", ip, port);
-            JsonServer server = new JsonServer(ip,port, serviceImpl);
+            JsonServer server = new JsonServer(ip, port, serviceImpl);
             server.Start();
             log.Debug("Server started ...");
-            //Console.WriteLine("Press <enter> to exit...");
+            Console.WriteLine("Press <enter> to exit...");
             Console.ReadLine();
             
         }

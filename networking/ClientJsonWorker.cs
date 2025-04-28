@@ -91,16 +91,15 @@ public class ClientJsonWorker : IObserver
             if (request.Type == RequestType.LOGIN)
             {
                 log.Debug("Login request ...");
-                string[] credentials = JsonSerializer.Deserialize<string[]>(request.Data.ToString());
-                string username = credentials[0];
-                string password = credentials[1];
+                SoftUser softUser = request.User;
+                Console.WriteLine("Login request ... + " + softUser);
                 try
                 {
                     lock (server)
                     {
-                        SoftUser foundSoftUser = server.Login(username, password, this);
+                        server.Login(softUser, this);
                         log.Info("User logged in");
-                        return JsonProtocolUtils.CreateOkResponse(foundSoftUser);
+                        return okResponse;
                     }
                 }
                 catch (MyException e)
@@ -114,7 +113,7 @@ public class ClientJsonWorker : IObserver
             if (request.Type == RequestType.LOGOUT)
             {
                 log.Debug("Logout request ...");
-                SoftUser softUser = DTOUtils.GetFromDTO(request.User);
+                SoftUser softUser = request.User;
                 try
                 {
                     lock (server)
@@ -135,15 +134,13 @@ public class ClientJsonWorker : IObserver
             if (request.Type == RequestType.MAKE_RESERVATION)
             {
                 log.Debug("Make reservation request ...");
-                Reservation reservation = DTOUtils.GetFromDTO(request.Reservation);
+                Reservation reservation = request.Reservation;
                 try
                 {
                     lock (server)
-                    {
-                        server.MakeReservation(reservation.clientName, reservation.clientPhone, reservation.ticketCount, reservation.trip);
-                    }
+                    server.MakeReservation(reservation.clientName, reservation.clientPhone, reservation.ticketCount, reservation.trip);
                     log.InfoFormat("Reservation successful for {0}, {1} tickets", reservation.clientName, reservation.ticketCount);
-                    return JsonProtocolUtils.CreateReservationMadeResponse(reservation);
+                    return okResponse;
                 }
                 catch (MyException e)
                 {
@@ -176,49 +173,33 @@ public class ClientJsonWorker : IObserver
             {
                 log.Debug("Get trips by date request ...");
 
-                if (request.Data is JsonElement dataElement && dataElement.ValueKind == JsonValueKind.Array)
+                SearchTripDTO searchTripDTO = request.SearchTrip;
+
+                if (searchTripDTO == null)
                 {
-                    var data = dataElement.EnumerateArray().Select(x => x.GetString()).ToList();
-
-                    if (data == null || data.Count != 4)
-                    {
-                        log.Error("Data array is not valid!");
-                        return JsonProtocolUtils.CreateErrorResponse("Invalid data format!");
-                    }
-
-                    SearchTripDTO searchTripDTO = new SearchTripDTO()
-                    {
-                        Objective = data[0],
-                        Date = DateTime.ParseExact(data[1], "dd/MM/yyyy HH:mm:ss", null),
-                        StartHour = int.Parse(data[2]),
-                        EndHour = int.Parse(data[3])
-                    };
-
-                    try
-                    {
-                        List<Trip> trips;
-                        lock (server)
-                        {
-                            trips = server.SearchTripsByObjectiveAndTime(
-                                searchTripDTO.Objective,
-                                searchTripDTO.Date,
-                                searchTripDTO.StartHour,
-                                searchTripDTO.EndHour
-                            ).ToList();
-                        }
-                        log.InfoFormat("Trips found: {0}", trips);
-                        return JsonProtocolUtils.CreateGetAllTripsByDateResponse(trips);
-                    }
-                    catch (MyException e)
-                    {
-                        log.ErrorFormat("Error in worker (solving method handleGET_ALL_TRIPS_BY_DATE): {0}", e.Message);
-                        return JsonProtocolUtils.CreateErrorResponse(e.Message);
-                    }
+                    log.Error("SearchTripDTO is null!");
+                    return JsonProtocolUtils.CreateErrorResponse("Invalid search trip data!");
                 }
-                else
+
+                try
                 {
-                    log.Error("Data is not a JSON array!");
-                    return JsonProtocolUtils.CreateErrorResponse("Invalid data format!");
+                    List<Trip> trips;
+                    lock (server)
+                    {
+                        trips = server.SearchTripsByObjectiveAndTime(
+                            searchTripDTO.Objective,
+                            searchTripDTO.Date,
+                            searchTripDTO.StartHour,
+                            searchTripDTO.EndHour
+                        ).ToList();
+                    }
+                    log.InfoFormat("Trips found: {0}", trips);
+                    return JsonProtocolUtils.CreateGetAllTripsByDateResponse(trips);
+                }
+                catch (MyException e)
+                {
+                    log.ErrorFormat("Error in worker (solving method handleGET_ALL_TRIPS_BY_DATE): {0}", e.Message);
+                    return JsonProtocolUtils.CreateErrorResponse(e.Message);
                 }
             }
 
@@ -226,7 +207,7 @@ public class ClientJsonWorker : IObserver
             if (request.Type == RequestType.FIND_TRIP)
             {
                 log.Debug("Find trip request ...");
-                long tripId = JsonSerializer.Deserialize<long>(request.Data.ToString());
+                long tripId = request.TripId;
                 try
                 {
                     Trip trip;

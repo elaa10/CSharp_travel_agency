@@ -30,18 +30,17 @@ public class ServerJsonProxy : IServices
             responses = new Queue<Response>();
         }
 
-        public SoftUser Login(string username, string password, IObserver softUserObserver)
+        public void Login(SoftUser softUser, IObserver softUserObserver)
         {
+            Console.WriteLine("Login user " + softUser);;
             InitializeConnection();
-            string[] credentials = new string[] { username, password };
-            SendRequest(JsonProtocolUtils.CreateLoginRequest(credentials));
+            SendRequest(JsonProtocolUtils.CreateLoginRequest(softUser));
 
             Response response = ReadResponse();
             if (response.Type == ResponseType.OK)
             {
                 this.softUserObserver = softUserObserver;
-                log.Info("Logged in");
-                return new SoftUser(username, password);
+                log.Info("Logged in {0}");
             }
 
             if (response.Type == ResponseType.ERROR)
@@ -51,7 +50,6 @@ public class ServerJsonProxy : IServices
                 CloseConnection();
                 throw new MyException(err);
             }
-            return null;
         }
 
         public void Logout(SoftUser softUser, IObserver client)
@@ -80,19 +78,16 @@ public class ServerJsonProxy : IServices
                 string err = response.ErrorMessage;
                 throw new MyException(err);
             }
-            else
-            {
-                log.Info("Got trips");
-            }
-
-            Trip[] trips = DTOUtils.GetFromDTO(response.Trips);
+            log.Info("Got trips");
+            
+            Trip[] trips = response.Trips;
             return trips;
         }
 
         public IEnumerable<Trip> SearchTripsByObjectiveAndTime(string objective, DateTime date, int startHour, int endHour)
         {
-            string[] data = new string[] { objective, date.ToString(), startHour.ToString(), endHour.ToString() };
-            SendRequest(JsonProtocolUtils.CreateGetTripsByDateRequest(data));
+            var searchTripDTO = new SearchTripDTO(objective, date, startHour, endHour);
+            SendRequest(JsonProtocolUtils.CreateGetTripsByDateRequest(searchTripDTO));
 
             Response response = ReadResponse();
 
@@ -104,7 +99,7 @@ public class ServerJsonProxy : IServices
             }
 
             log.Info("Got trips");
-            Trip[] trips = DTOUtils.GetFromDTO(response.Trips);
+            Trip[] trips = response.Trips;
             return trips;
         }
 
@@ -119,20 +114,16 @@ public class ServerJsonProxy : IServices
                 string err = response.ErrorMessage;
                 throw new MyException(err);
             }
-            else
-            {
-                log.Info("Found trip");
-            }
-            Trip trip = DTOUtils.GetFromDTO(response.Trip);
+            log.Info("Found trip");
+            Trip trip = response.Trip;
             return trip;
         }
 
         public void MakeReservation(string clientName, string clientPhone, int ticketCount, Trip trip)
         {
-            ReservationDTO reservationDTO = new ReservationDTO(0, clientName, clientPhone, ticketCount, DTOUtils.GetDTO(trip));
-            SendRequest(JsonProtocolUtils.CreateMakeReservationRequest(reservationDTO));
-
-
+            Reservation reservation = new Reservation(clientName, clientPhone, ticketCount, trip);
+            SendRequest(JsonProtocolUtils.CreateMakeReservationRequest(reservation));
+            
             Response response = ReadResponse();
             if (response.Type == ResponseType.ERROR)
             {
@@ -157,8 +148,10 @@ public class ServerJsonProxy : IServices
             }
             catch (Exception e)
             {
-                log.Error($"Error connecting to server {host}:{port}: {e.Message}");
-                throw new MyException($"Error connecting to server {host}:{port}: {e.Message}");
+                log.ErrorFormat("Error initializing connection {0}", e.Message);
+                if (e.InnerException != null)
+                    log.ErrorFormat("Error initializing connection inner error {0}", e.InnerException.Message);
+                Console.WriteLine("Error initializing connection " + e.Message);
             }
         }
 
@@ -167,7 +160,6 @@ public class ServerJsonProxy : IServices
             finished = true;
             try
             {
-                finished = true;
                 stream.Close();
                 connection.Close();
                 _waitHandle.Close();
@@ -176,7 +168,9 @@ public class ServerJsonProxy : IServices
             }
             catch (Exception e)
             {
-                log.Error("Error closing connection: " + e);
+                log.ErrorFormat("Error closing connection {0}", e.Message);
+                if (e.InnerException != null)
+                    log.ErrorFormat("Error closing connection inner error {0}", e.InnerException.Message);
             }
         }
 
@@ -184,6 +178,10 @@ public class ServerJsonProxy : IServices
         {
             try
             {
+                if (stream == null)
+                {
+                    throw new MyException("Stream is null! Probably you are not connected to server.");
+                }
                 lock (stream)
                 {
                     string jsonRequest = JsonSerializer.Serialize(request);
@@ -195,8 +193,10 @@ public class ServerJsonProxy : IServices
             }
             catch (Exception e)
             {
-                log.Error($"Error sending request: {e.Message}");
-                throw new MyException($"Error sending request: {e.Message}");
+                log.ErrorFormat("Error sending request {0}", e.Message);
+                if (e.InnerException != null)
+                    log.ErrorFormat("Error sending request inner error {0}", e.InnerException.Message);
+                throw new MyException("Error sending request " + e);
             }
         }
         private Response ReadResponse()
@@ -212,8 +212,9 @@ public class ServerJsonProxy : IServices
             }
             catch (Exception e)
             {
-                log.Error("Reading response error " + e);
-                throw new MyException("Reading response error " + e);
+                log.ErrorFormat("Error reading response {0}", e.Message);
+                if (e.InnerException != null)
+                    log.ErrorFormat("Error reading response inner error {0}", e.InnerException.Message);    
             }
             return response;
         }
@@ -229,15 +230,27 @@ public class ServerJsonProxy : IServices
             log.DebugFormat("handleUpdate called with {0}",response);
             if (response.Type == ResponseType.RESERVATION_MADE)
             {
-                Reservation reservation = DTOUtils.GetFromDTO(response.Reservation);
-                log.Info("Reservation made " + reservation);
                 try
                 {
-                    softUserObserver.ReservationMade(reservation);
+                    log.Debug($"Attempting to notify trip : {response.Reservation != null}");
+                    if (softUserObserver == null)
+                    {
+                        log.Error("Client is null when trying to notify about ticket");
+                        return;
+                    }
+                    try
+                    {
+                        softUserObserver.ReservationMade(response.Reservation);
+                    }
+                    catch (Exception ex) {
+                        log.Error($"Failed to notify client: {ex.Message}");
+                    }
                 }
-                catch (MyException e)
+                catch (Exception e)
                 {
-                    log.Error("Error handle update: " + e);
+                    log.ErrorFormat("Error handling update {0}", e.Message);
+                    if (e.InnerException != null)
+                        log.ErrorFormat("Error handling update inner error {0}", e.InnerException.Message);
                 }
             }
         }
@@ -257,10 +270,12 @@ public class ServerJsonProxy : IServices
                     string responseJson = reader.ReadLine();
                     if (string.IsNullOrEmpty(responseJson))
                         continue;
-                    log.Debug($"Received raw line: {responseJson}");
+                    log.DebugFormat("Received json response {0}", responseJson);
 
                     Response response = JsonSerializer.Deserialize<Response>(responseJson);
                     log.Info("response received " + response);
+                    log.DebugFormat("Deserialized response {0}", JsonSerializer.Serialize(response));
+
 
                     if (IsUpdate(response))
                     {
@@ -272,41 +287,15 @@ public class ServerJsonProxy : IServices
                         {
                             responses.Enqueue(response);
                         }
-                        try
-                        {
-                            _waitHandle?.Set();
-                        }
-                        catch (ObjectDisposedException)
-                        {
-                            log.Warn("Tried to set disposed _waitHandle, ignoring.");
-                        }
-
+                        _waitHandle?.Set();
                     }
                 }
                 catch (Exception e)
                 {
-                    if (e is IOException)
-                        log.Info("Socket closed: " + e);
-                    else
-                        log.Error("Reading error: " + e);
-
-                    lock (responses)
-                    {
-                        responses.Enqueue(new Response { Type = ResponseType.ERROR, ErrorMessage = "Error during reading from server." });
-                    }
-                    try
-                    {
-                        _waitHandle?.Set();
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        log.Warn("Tried to set disposed _waitHandle, ignoring.");
-                    }
-
-                    finished = true; // <- adaugă aici ca să se oprească loop-ul
+                    log.ErrorFormat("Error reading response {0}", e.Message);
+                    if (e.InnerException != null)
+                        log.ErrorFormat("Error reading response inner error {0}", e.InnerException.Message);
                 }
-
-
             }
         }
     }

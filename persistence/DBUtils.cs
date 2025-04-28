@@ -56,7 +56,8 @@ public class SQLiteConnectionFactory : ConnectionFactory
 
     public override IDbConnection CreateConnection(IDictionary<string, string> props)
     {
-        String connectionString = props["ConnectionString"];
+        string databasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "database", "turism.db");
+        String connectionString = $"Data Source={databasePath}";
         log.DebugFormat("creating ... sqlite connection for {0}", connectionString);
         Console.WriteLine(@"SQLite --- opens a connection to {0}", connectionString);
         return new SQLiteConnection(connectionString);

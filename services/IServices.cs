@@ -6,7 +6,7 @@ namespace services;
 public interface IServices
 {
     // SoftUser
-    SoftUser Login(string username, string password, IObserver softUserObserver);
+    void Login(SoftUser softUser, IObserver softUserObserver);
     void Logout(SoftUser softUser, IObserver softUserObserver);
 
     // Trip
