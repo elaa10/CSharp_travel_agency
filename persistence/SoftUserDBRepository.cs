@@ -36,11 +36,12 @@ namespace persistence
                     if (reader.Read())
                     {
                         var user = new SoftUser(
-                            (string)reader["username"], 
-                            (string)reader["password"])
+                            reader["username"].ToString(), 
+                            reader["password"].ToString())
                         {
-                            Id = (long)reader["id"]
+                            Id = Convert.ToInt64(reader["id"])
                         };
+
                         return user;
                     }
                 }
@@ -63,11 +64,12 @@ namespace persistence
                     while (reader.Read())
                     {
                         var user = new SoftUser(
-                            (string)reader["username"], 
-                            (string)reader["password"])
+                            reader["username"].ToString(), 
+                            reader["password"].ToString())
                         {
-                            Id = (long)reader["id"]
+                            Id = Convert.ToInt64(reader["id"])
                         };
+
                         users.Add(user);
                     }
                 }
@@ -180,10 +182,10 @@ namespace persistence
                     if (reader.Read())
                     {
                         var user = new SoftUser(
-                            (string)reader["username"], 
-                            (string)reader["password"])
+                            reader["username"].ToString(), 
+                            reader["password"].ToString())
                         {
-                            Id = (long)reader["id"]
+                            Id = Convert.ToInt64(reader["id"])
                         };
                         return user;
                     }

@@ -1,35 +1,34 @@
 ﻿using client;
 using services;
 
-namespace Agentie_turism_transport_csharp;
+namespace client;
 
 public partial class LoginForm : Form
 {
-    private readonly IServices _service;
-
-    public LoginForm(IServices service)
+    private ProjectClientCtrl ctrl;
+    public LoginForm(ProjectClientCtrl ctrl)
     {
         InitializeComponent();
-        _service = service;
+        this.ctrl = ctrl;
     }
 
-    private void btnLogin_Click(object sender, EventArgs e)
+    private void loginButton_Click(object sender, EventArgs e)
     {
-        string username = txtUsername.Text;
-        string password = txtPassword.Text;
+        string username = userTextBox.Text;
+        string password = passwordTextBox.Text;
 
-        var mainForm = new MainForm(_service); 
-        var user = _service.Login(username, password, mainForm);
-        if (user != null)
+        try
         {
-            // MessageBox.Show("Login successful!");
-            
-            mainForm.Show();
-            this.Hide(); 
+            ctrl.login(username, password);
+            MainForm chatWin = new MainForm(ctrl);
+            chatWin.Text = "Chat window for " + username;
+            chatWin.Show();
+            this.Hide();
         }
-        else
+        catch (Exception ex)
         {
-            MessageBox.Show("Invalid username or password.");
+            MessageBox.Show(this, "Login Error " + ex.Message/*+ex.StackTrace*/, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
         }
     }
     

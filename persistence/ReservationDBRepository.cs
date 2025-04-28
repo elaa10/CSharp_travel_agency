@@ -34,15 +34,15 @@ namespace persistence
                 {
                     if (reader.Read())
                     {
-                        var tripId = (long)reader["trip"];
+                        var tripId = Convert.ToInt64(reader["trip"]);
                         var trip = tripRepository.FindOne(tripId);
                         var reservation = new Reservation(
-                            (string)reader["clientName"],
-                            (string)reader["clientPhone"],
-                            (int)reader["ticketCount"],
+                            reader["clientName"].ToString(),
+                        reader["clientPhone"].ToString(),
+                        Convert.ToInt32(reader["ticketCount"]),
                             trip)
                         {
-                            Id = (long)reader["id"]
+                            Id = Convert.ToInt64(reader["id"])
                         };
                         return reservation;
                     }
@@ -65,15 +65,15 @@ namespace persistence
                 {
                     while (reader.Read())
                     {
-                        var tripId = (long)reader["trip"];
+                        var tripId = Convert.ToInt64(reader["trip"]);
                         var trip = tripRepository.FindOne(tripId);
                         var reservation = new Reservation(
-                            (string)reader["clientName"],
-                            (string)reader["clientPhone"],
-                            (int)reader["ticketCount"],
+                            reader["clientName"].ToString(),
+                            reader["clientPhone"].ToString(),
+                            Convert.ToInt32(reader["ticketCount"]),
                             trip)
                         {
-                            Id = (long)reader["id"]
+                            Id = Convert.ToInt64(reader["id"])
                         };
                         reservations.Add(reservation);
                     }

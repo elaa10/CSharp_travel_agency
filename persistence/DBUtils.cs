@@ -12,13 +12,14 @@ public static class DBUtils
 
     public static IDbConnection GetConnection(IDictionary<string, string> props)
     {
-        if (instance == null && instance.State == System.Data.ConnectionState.Closed)
+        if (instance == null || instance.State == System.Data.ConnectionState.Closed)
         {
             instance = GetNewConnection(props);
             instance.Open();
         }
         return instance;
     }
+
 
     private static IDbConnection GetNewConnection(IDictionary<string, string> props)
     {

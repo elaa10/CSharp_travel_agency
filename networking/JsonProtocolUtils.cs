@@ -2,6 +2,7 @@
 
 using Agentie_turism_transport_csharp.networking;
 using model;
+using networking.dto;
 
 namespace networking;
 
@@ -9,7 +10,7 @@ public static class JsonProtocolUtils
 {
     public static Response CreateOkResponse(object data = null)
     {
-        return new Response { Type = ResponseType.OK, Data = data };
+        return new Response { Type = ResponseType.OK};
     }
 
     public static Response CreateErrorResponse(string errorMessage)
@@ -19,22 +20,22 @@ public static class JsonProtocolUtils
 
     public static Response CreateGetAllTripsResponse(List<Trip> trips)
     {
-        return new Response { Type = ResponseType.GET_ALL_TRIPS, Data = trips };
+        return new Response { Type = ResponseType.GET_ALL_TRIPS, Trips = DTOUtils.GetDTO(trips.ToArray()) };
     }
 
     public static Response CreateGetAllTripsByDateResponse(List<Trip> trips)
     {
-        return new Response { Type = ResponseType.GET_ALL_TRIPS_BY_DATE, Data = trips };
+        return new Response { Type = ResponseType.GET_ALL_TRIPS_BY_DATE, Trips = DTOUtils.GetDTO(trips.ToArray())};
     }
 
     public static Response CreateFindTripResponse(Trip trip)
     {
-        return new Response { Type = ResponseType.FIND_TRIP, Data = trip };
+        return new Response { Type = ResponseType.FIND_TRIP, Trip = DTOUtils.GetDTO(trip) };
     }
 
     public static Response CreateReservationMadeResponse(Reservation reservation)
     {
-        return new Response { Type = ResponseType.RESERVATION_MADE, Data = reservation };
+        return new Response { Type = ResponseType.RESERVATION_MADE, Reservation = DTOUtils.GetDTO(reservation) };
     }
     
     
@@ -46,12 +47,12 @@ public static class JsonProtocolUtils
 
     public static Request CreateLogoutRequest(SoftUser softUser)
     {
-        return new Request { Type = RequestType.LOGOUT, Data = softUser };
+        return new Request { Type = RequestType.LOGOUT, User = DTOUtils.GetDTO(softUser) };
     }
 
     public static Request CreateGetAllTripsRequest()
     {
-        return new Request { Type = RequestType.GET_ALL_TRIPS, Data = null };
+        return new Request { Type = RequestType.GET_ALL_TRIPS};
     }
 
     public static Request CreateGetTripsByDateRequest(string[] data)
@@ -64,8 +65,8 @@ public static class JsonProtocolUtils
         return new Request { Type = RequestType.FIND_TRIP, Data = id };
     }
 
-    public static Request CreateMakeReservationRequest(object[] data)
+    public static Request CreateMakeReservationRequest(ReservationDTO reservation)
     {
-        return new Request { Type = RequestType.MAKE_RESERVATION, Data = data };
+        return new Request { Type = RequestType.MAKE_RESERVATION, Reservation = reservation };
     }
 }

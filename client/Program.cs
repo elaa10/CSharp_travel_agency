@@ -1,55 +1,59 @@
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Reflection;
-using System.Windows.Forms;
-using Agentie_turism_transport_csharp;
-using log4net;
-using log4net.Config;
+using System.Net.Sockets;
 using networking;
 using services;
 
-namespace client
+namespace client;
+
+static class StartClient
 {
-    internal static class Program
+    [STAThread]
+    static void Main()
     {
-        [STAThread]
-        static void Main()
+        try
         {
-            ApplicationConfiguration.Initialize(); // activează stilul modern de UI
-            var props = LoadProperties(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "user.properties"));
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
 
-
-            string serverIp = props.ContainsKey("server.host") ? props["server.host"] : "localhost";
-            int serverPort = props.ContainsKey("server.port") && int.TryParse(props["server.port"], out var port)
-                ? port
-                : 55556;
-
-            Console.WriteLine($"Using server IP: {serverIp}");
-            Console.WriteLine($"Using server port: {serverPort}");
-
-            IServices service = new ServerJsonProxy(serverIp, serverPort);
-
-            var loginForm = new LoginForm(service); 
-            Application.Run(loginForm);
-        }
-
-        static Dictionary<string, string> LoadProperties(string path)
-        {
-            var props = new Dictionary<string, string>();
-            if (!File.Exists(path)) return props;
-
-            foreach (var line in File.ReadAllLines(path))
+            // Verifică dacă serverul este disponibil
+            if (!IsServerAvailable("127.0.0.1", 55556))
             {
-                var trimmed = line.Trim();
-                if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#")) continue;
-
-                var split = trimmed.Split('=', 2);
-                if (split.Length == 2)
-                    props[split[0].Trim()] = split[1].Trim();
+                MessageBox.Show("Server is not available. Please start the server first.", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
 
-            return props;
+            IServices server = new ServerJsonProxy("127.0.0.1", 55556);
+            ProjectClientCtrl ctrl = new ProjectClientCtrl(server);
+            LoginForm win = new LoginForm(ctrl);
+            Application.Run(win);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error starting application: {ex.Message}", "Error", 
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
+    
+    private static bool IsServerAvailable(string host, int port)
+    {
+        try
+        {
+            using (var client = new TcpClient())
+            {
+                var result = client.BeginConnect(host, port, null, null);
+                var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(1));
+                if (!success)
+                {
+                    return false;
+                }
+                client.EndConnect(result);
+                return true;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
 }

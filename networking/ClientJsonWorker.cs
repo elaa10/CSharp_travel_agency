@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using log4net;
 using model;
+using networking.dto;
 using services;
 
 namespace networking;
@@ -113,7 +114,7 @@ public class ClientJsonWorker : IObserver
             if (request.Type == RequestType.LOGOUT)
             {
                 log.Debug("Logout request ...");
-                SoftUser softUser = JsonSerializer.Deserialize<SoftUser>(request.Data.ToString());
+                SoftUser softUser = DTOUtils.GetFromDTO(request.User);
                 try
                 {
                     lock (server)
@@ -134,20 +135,15 @@ public class ClientJsonWorker : IObserver
             if (request.Type == RequestType.MAKE_RESERVATION)
             {
                 log.Debug("Make reservation request ...");
-                var data = JsonSerializer.Deserialize<object[]>(request.Data.ToString());
-                string clientName = (string)data[0];
-                string clientPhone = (string)data[1];
-                int ticketCount = (int)(long)data[2]; // JSON numbers are deserialized as long by default
-                Trip trip = JsonSerializer.Deserialize<Trip>(data[3].ToString());
-
+                Reservation reservation = DTOUtils.GetFromDTO(request.Reservation);
                 try
                 {
                     lock (server)
                     {
-                        server.MakeReservation(clientName, clientPhone, ticketCount, trip);
+                        server.MakeReservation(reservation.clientName, reservation.clientPhone, reservation.ticketCount, reservation.trip);
                     }
-                    log.InfoFormat("Reservation successful for {0}, {1} tickets", clientName, ticketCount);
-                    return okResponse;
+                    log.InfoFormat("Reservation successful for {0}, {1} tickets", reservation.clientName, reservation.ticketCount);
+                    return JsonProtocolUtils.CreateReservationMadeResponse(reservation);
                 }
                 catch (MyException e)
                 {
@@ -179,28 +175,53 @@ public class ClientJsonWorker : IObserver
             if (request.Type == RequestType.GET_ALL_TRIPS_BY_DATE)
             {
                 log.Debug("Get trips by date request ...");
-                string[] requestData = JsonSerializer.Deserialize<string[]>(request.Data.ToString());
-                string objective = requestData[0];
-                DateTime date = DateTime.Parse(requestData[1]);
-                int startHour = int.Parse(requestData[2]);
-                int endHour = int.Parse(requestData[3]);
 
-                try
+                if (request.Data is JsonElement dataElement && dataElement.ValueKind == JsonValueKind.Array)
                 {
-                    List<Trip> trips;
-                    lock (server)
+                    var data = dataElement.EnumerateArray().Select(x => x.GetString()).ToList();
+
+                    if (data == null || data.Count != 4)
                     {
-                        trips = server.SearchTripsByObjectiveAndTime(objective, date, startHour, endHour).ToList(); ;
+                        log.Error("Data array is not valid!");
+                        return JsonProtocolUtils.CreateErrorResponse("Invalid data format!");
                     }
-                    log.InfoFormat("Trips found: {0}", trips);
-                    return JsonProtocolUtils.CreateGetAllTripsByDateResponse(trips);
+
+                    SearchTripDTO searchTripDTO = new SearchTripDTO()
+                    {
+                        Objective = data[0],
+                        Date = DateTime.ParseExact(data[1], "dd/MM/yyyy HH:mm:ss", null),
+                        StartHour = int.Parse(data[2]),
+                        EndHour = int.Parse(data[3])
+                    };
+
+                    try
+                    {
+                        List<Trip> trips;
+                        lock (server)
+                        {
+                            trips = server.SearchTripsByObjectiveAndTime(
+                                searchTripDTO.Objective,
+                                searchTripDTO.Date,
+                                searchTripDTO.StartHour,
+                                searchTripDTO.EndHour
+                            ).ToList();
+                        }
+                        log.InfoFormat("Trips found: {0}", trips);
+                        return JsonProtocolUtils.CreateGetAllTripsByDateResponse(trips);
+                    }
+                    catch (MyException e)
+                    {
+                        log.ErrorFormat("Error in worker (solving method handleGET_ALL_TRIPS_BY_DATE): {0}", e.Message);
+                        return JsonProtocolUtils.CreateErrorResponse(e.Message);
+                    }
                 }
-                catch (MyException e)
+                else
                 {
-                    log.ErrorFormat("Error in worker (solving method handleGET_ALL_TRIPS_BY_DATE): {0}", e.Message);
-                    return JsonProtocolUtils.CreateErrorResponse(e.Message);
+                    log.Error("Data is not a JSON array!");
+                    return JsonProtocolUtils.CreateErrorResponse("Invalid data format!");
                 }
             }
+
 
             if (request.Type == RequestType.FIND_TRIP)
             {
@@ -240,15 +261,23 @@ public class ClientJsonWorker : IObserver
 
         public void ReservationMade(Reservation reservation)
         {
-            log.DebugFormat("Reservation made {0}", reservation);
+            log.DebugFormat("Reservation made for {0}, {1} tickets", reservation.clientName, reservation.ticketCount);
+            Response updateResponse = JsonProtocolUtils.CreateReservationMadeResponse(reservation);
             try
             {
-                SendResponse(JsonProtocolUtils.CreateReservationMadeResponse(reservation));
-                log.Info("Response sent");
+                if (connection != null && connection.Connected)
+                {
+                    log.DebugFormat("Sending update response to other clients: {0}", updateResponse);
+                    SendResponse(updateResponse);
+                }
+                else
+                {
+                    log.Warn("Connection is not active, cannot send update");
+                }
             }
             catch (Exception e)
             {
-                log.ErrorFormat("Error in worker (sending response): {0}", e.Message);
+                log.ErrorFormat("Error sending update response: {0}", e.Message);
             }
         }
     }

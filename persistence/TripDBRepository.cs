@@ -231,13 +231,13 @@ namespace persistence
         {
             var departureTime = DateTime.Parse(reader["departureTime"].ToString());
             var trip = new Trip(
-                (string)reader["touristAttraction"],
-                (string)reader["transportCompany"],
+                reader["touristAttraction"].ToString(),
+                reader["transportCompany"].ToString(),
                 departureTime,
-                (double)reader["price"],
-                (int)reader["availableSeats"])
+                Convert.ToDouble(reader["price"]),
+                Convert.ToInt32(reader["availableSeats"]))
             {
-                Id = (long)reader["id"]
+                Id = Convert.ToInt64(reader["id"])
             };
             return trip;
         }
