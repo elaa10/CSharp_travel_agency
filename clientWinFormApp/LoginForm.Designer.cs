@@ -24,22 +24,22 @@ namespace clientWinFormApp
         #region Windows Form Designer generated code
 
         /// <summary>
-        ///  Required method for Designer support - do not modify
-        ///  the contents of this method with the code editor.
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent()
         {
-            loginButton = new Button();
-            helloLabel = new Label();
-            userTextBox = new TextBox();
-            passwordTextBox = new TextBox();
+            loginButton = new System.Windows.Forms.Button();
+            helloLabel = new System.Windows.Forms.Label();
+            userTextBox = new System.Windows.Forms.TextBox();
+            passwordTextBox = new System.Windows.Forms.TextBox();
             SuspendLayout();
             // 
             // loginButton
             // 
-            loginButton.Location = new Point(88, 258);
+            loginButton.Location = new System.Drawing.Point(141, 244);
             loginButton.Name = "loginButton";
-            loginButton.Size = new Size(75, 23);
+            loginButton.Size = new System.Drawing.Size(75, 32);
             loginButton.TabIndex = 2;
             loginButton.Text = "Login";
             loginButton.UseVisualStyleBackColor = true;
@@ -48,50 +48,51 @@ namespace clientWinFormApp
             // helloLabel
             // 
             helloLabel.AutoSize = true;
-            helloLabel.Font = new Font("Segoe UI", 24F, FontStyle.Regular, GraphicsUnit.Point);
-            helloLabel.Location = new Point(75, 64);
+            helloLabel.Font = new System.Drawing.Font("Segoe UI", 24F);
+            helloLabel.Location = new System.Drawing.Point(6, 40);
             helloLabel.Name = "helloLabel";
-            helloLabel.Size = new Size(104, 45);
+            helloLabel.Size = new System.Drawing.Size(341, 54);
             helloLabel.TabIndex = 1;
-            helloLabel.Text = "Hello!";
+            helloLabel.Text = "Agentie de turism";
+            helloLabel.Click += helloLabel_Click;
             // 
             // userTextBox
             // 
-            userTextBox.Location = new Point(60, 146);
+            userTextBox.Location = new System.Drawing.Point(113, 137);
             userTextBox.Name = "userTextBox";
             userTextBox.PlaceholderText = "Username";
-            userTextBox.Size = new Size(134, 23);
+            userTextBox.Size = new System.Drawing.Size(134, 27);
             userTextBox.TabIndex = 0;
             // 
             // passwordTextBox
             // 
-            passwordTextBox.Location = new Point(60, 194);
+            passwordTextBox.Location = new System.Drawing.Point(113, 194);
             passwordTextBox.Name = "passwordTextBox";
             passwordTextBox.PlaceholderText = "Password";
-            passwordTextBox.Size = new Size(134, 23);
+            passwordTextBox.Size = new System.Drawing.Size(134, 27);
             passwordTextBox.TabIndex = 1;
             passwordTextBox.UseSystemPasswordChar = true;
             // 
-            // login
+            // LoginForm
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(258, 343);
+            AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            ClientSize = new System.Drawing.Size(348, 343);
             Controls.Add(passwordTextBox);
             Controls.Add(userTextBox);
             Controls.Add(helloLabel);
             Controls.Add(loginButton);
-            Name = "login";
-            Text = "Form1";
+            Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            Text = "Hello!";
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
 
-        private Button loginButton;
-        private Label helloLabel;
-        private TextBox userTextBox;
-        private TextBox passwordTextBox;
+        private System.Windows.Forms.Button loginButton;
+        private System.Windows.Forms.Label helloLabel;
+        private System.Windows.Forms.TextBox userTextBox;
+        private System.Windows.Forms.TextBox passwordTextBox;
     }
 }

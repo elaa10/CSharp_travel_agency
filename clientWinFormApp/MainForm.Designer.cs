@@ -247,6 +247,7 @@ partial class MainForm
         Controls.Add(label2);
         Controls.Add(label1);
         Text = "Incercare";
+        this.FormClosing += MainForm_FormClosing;
         ((System.ComponentModel.ISupportInitialize)searchResultsTable).EndInit();
         ((System.ComponentModel.ISupportInitialize)tripsTable).EndInit();
         ResumeLayout(false);

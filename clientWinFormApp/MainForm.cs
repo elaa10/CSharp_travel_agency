@@ -17,11 +17,12 @@ public partial class MainForm : Form, IObserver{
     {
         Console.WriteLine("setez server");
         this.server = server;
-        Console.WriteLine("setez angajat");
+        Console.WriteLine("setez user");
         this.user = softUser;  
         Console.WriteLine("setez component");
         InitializeComponent();
-        Console.WriteLine("setez trips");
+        
+        this.Text = $"Bine ai venit, {softUser.username}";
     }
     
     
@@ -128,4 +129,22 @@ public partial class MainForm : Form, IObserver{
             Console.WriteLine("Error in BiletCumparat: " + ex.Message);
         }
     }
+    
+    private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+    {
+        try
+        {
+            if (user != null && server != null)
+            {
+                btnLogout_Click(sender, e);
+                Console.WriteLine("User logged out on window close.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error during logout on close: " + ex.Message);
+        }
+    }
+
+    
 }

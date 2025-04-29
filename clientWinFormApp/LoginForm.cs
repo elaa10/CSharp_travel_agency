@@ -29,9 +29,7 @@ public partial class LoginForm : Form
 
         try
         {   
-            Console.WriteLine("Creez MainView");
             MainForm mainView = new MainForm(softUser, server);
-            Console.WriteLine("Acum login");
             server.Login(softUser, mainView);
             mainView.loadTrips(); 
             mainView.Show();
@@ -44,5 +42,10 @@ public partial class LoginForm : Form
             passwordTextBox.Clear();
             return;
         }
+    }
+
+    private void helloLabel_Click(object sender, EventArgs e)
+    {
+        throw new System.NotImplementedException();
     }
 }
