@@ -9,7 +9,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\client\client.csproj" />
       <ProjectReference Include="..\model\model.csproj" />
       <ProjectReference Include="..\persistence\persistence.csproj" />
       <ProjectReference Include="..\server\server.csproj" />
