@@ -17,6 +17,9 @@ namespace server
         private readonly ITripRepository tripRepo;
         private readonly IReservationRepository reservationRepo;
         private readonly Dictionary<string, IObserver> loggedSoftUsers = new();
+        private readonly List<IServerStreamWriter<ReservationNotification>> observers = new();
+        private readonly object observersLock = new();
+
 
         public ServiceImplGrpc(ISoftUserRepository softUserRepo, ITripRepository tripRepo, IReservationRepository reservationRepo)
         {
@@ -83,7 +86,7 @@ namespace server
         }
 
         // ------------------ Reservation ------------------
-        public override Task<Empty> MakeReservation(ReservationRequest request, ServerCallContext context)
+        public override async Task<Empty> MakeReservation(ReservationRequest request, ServerCallContext context)
         {
             var trip = FromGrpcTrip(request.Trip);
 
@@ -94,15 +97,31 @@ namespace server
             reservationRepo.Save(reservation);
             UpdateAvailableSeats(trip, trip.availableSeats - request.TicketCount);
 
-            Console.WriteLine("[MakeReservation] Notifying all logged-in users...");
-            foreach (var username in loggedSoftUsers.Keys)
+            Console.WriteLine("[MakeReservation] Notifying all clients...");
+
+            // ✅ Notifică toți observerii înregistrați
+            lock (observersLock)
             {
-                Console.WriteLine("Notify: " + username);
-                // Aici în viitor poți trimite notificări reale dacă implementezi client streaming
+                foreach (var observer in observers.ToList())
+                {
+                    try
+                    {
+                        observer.WriteAsync(new ReservationNotification
+                        {
+                            Message = "A reservation was made.",
+                            TripId = trip.Id
+                        });
+                    }
+                    catch
+                    {
+                        // Ignoră streamurile închise
+                    }
+                }
             }
 
-            return Task.FromResult(new Empty());
+            return new Empty();
         }
+
 
         private void UpdateAvailableSeats(model.Trip trip, int newAvailableSeats)
         {
@@ -137,5 +156,25 @@ namespace server
                 grpcTrip.AvailableSeats
             ) { Id = grpcTrip.Id };
         }
+        
+        public override async Task ReservationNotifications(Empty request, IServerStreamWriter<ReservationNotification> responseStream, ServerCallContext context)
+        {
+            lock (observersLock)
+            {
+                observers.Add(responseStream);
+            }
+
+            // Keep stream alive
+            while (!context.CancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(1000); // Sleep to avoid busy wait
+            }
+
+            lock (observersLock)
+            {
+                observers.Remove(responseStream);
+            }
+        }
+
     }
 }
