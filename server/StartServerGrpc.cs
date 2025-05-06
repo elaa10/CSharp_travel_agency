@@ -37,13 +37,12 @@ builder.Services.AddSingleton<IReservationRepository>(provider =>
 });
 
 // 4. Înregistrăm serviciul gRPC
-builder.Services.AddScoped<IServices, ServicesImpl>();
-builder.Services.AddScoped<ServiceImplGrpc>();
+builder.Services.AddSingleton<ServiceImplGrpc>();
 
 var app = builder.Build();
 
 // 5. Mapăm serviciul gRPC
-app.MapGrpcService<ServiceImplGrpc>(); // serviciul tău
-app.MapGet("/", () => "This is a gRPC server."); // pentru testare
+app.MapGrpcService<ServiceImplGrpc>();  
+app.MapGet("/", () => "This is a gRPC server.");  
 
 app.Run();

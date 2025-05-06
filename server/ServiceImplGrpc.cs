@@ -1,97 +1,119 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using Grpc.Core;
 using GrpcContracts;
 using Google.Protobuf.WellKnownTypes;
 using model;
+using persistence.interfaces;
 using services;
 
 namespace server
 {
     public class ServiceImplGrpc : TourismService.TourismServiceBase
     {
-        private readonly IServices _service;
+        private readonly ISoftUserRepository softUserRepo;
+        private readonly ITripRepository tripRepo;
+        private readonly IReservationRepository reservationRepo;
+        private readonly Dictionary<string, IObserver> loggedSoftUsers = new();
 
-        public ServiceImplGrpc(IServices service)
+        public ServiceImplGrpc(ISoftUserRepository softUserRepo, ITripRepository tripRepo, IReservationRepository reservationRepo)
         {
-            _service = service;
+            this.softUserRepo = softUserRepo;
+            this.tripRepo = tripRepo;
+            this.reservationRepo = reservationRepo;
         }
 
+        // ------------------ SoftUser ------------------
         public override Task<LoginResponse> Login(GrpcContracts.SoftUser request, ServerCallContext context)
         {
-            var user = new model.SoftUser(request.Username, request.Password) { Id = request.Id };
+            var user = softUserRepo.FindByUsernameAndPassword(request.Username, request.Password);
 
-            try
+            if (user == null)
+                throw new RpcException(new Status(StatusCode.Unauthenticated, "Authentication failed."));
+
+            lock (loggedSoftUsers)
             {
-                _service.Login(user, null); // sau trimite un observer dacă ai implementat
-                return Task.FromResult(new LoginResponse { Message = "Login successful" });
+                if (loggedSoftUsers.ContainsKey(user.username))
+                    throw new RpcException(new Status(StatusCode.AlreadyExists, "User already logged in."));
+
+                loggedSoftUsers[user.username] = null; // placeholder since gRPC doesn't support callbacks
             }
-            catch (MyException ex)
-            {
-                throw new RpcException(new Status(StatusCode.Unauthenticated, ex.Message));
-            }
+
+            return Task.FromResult(new LoginResponse { Message = "Login successful" });
         }
 
         public override Task<Empty> Logout(GrpcContracts.SoftUser request, ServerCallContext context)
         {
-            var user = new model.SoftUser(request.Username, request.Password) { Id = request.Id };
+            lock (loggedSoftUsers)
+            {
+                if (!loggedSoftUsers.Remove(request.Username))
+                    throw new RpcException(new Status(StatusCode.NotFound, "User not logged in."));
+            }
 
-            try
-            {
-                _service.Logout(user, null);
-                return Task.FromResult(new Empty());
-            }
-            catch (MyException ex)
-            {
-                throw new RpcException(new Status(StatusCode.Unauthenticated, ex.Message));
-            }
+            return Task.FromResult(new Empty());
         }
 
+        // ------------------ Trip ------------------
         public override Task<TripList> GetAllTrips(Empty request, ServerCallContext context)
         {
-            var trips = _service.GetAllTrips();
-
-            var tripList = new TripList();
-            tripList.Trips.AddRange(trips.Select(ToGrpcTrip));
-
-            return Task.FromResult(tripList);
+            var trips = tripRepo.FindAll();
+            var list = new TripList();
+            list.Trips.AddRange(trips.Select(ToGrpcTrip));
+            return Task.FromResult(list);
         }
 
         public override Task<TripList> SearchTripsByObjectiveAndTime(SearchTripRequest request, ServerCallContext context)
         {
             var date = request.Date.ToDateTime();
-            var trips = _service.SearchTripsByObjectiveAndTime(request.Objective, date, request.StartHour, request.EndHour);
-
-            var tripList = new TripList();
-            tripList.Trips.AddRange(trips.Select(ToGrpcTrip));
-
-            return Task.FromResult(tripList);
+            var results = tripRepo.FindTripsByObjectiveDateAndTimeRange(request.Objective, date, request.StartHour, request.EndHour);
+            var list = new TripList();
+            list.Trips.AddRange(results.Select(ToGrpcTrip));
+            return Task.FromResult(list);
         }
 
         public override Task<GrpcContracts.Trip> GetTripById(TripIdRequest request, ServerCallContext context)
         {
-            var trip = _service.GetTripById(request.Id);
+            var trip = tripRepo.FindOne(request.Id);
+            if (trip == null)
+                throw new RpcException(new Status(StatusCode.NotFound, "Trip not found."));
+
             return Task.FromResult(ToGrpcTrip(trip));
         }
 
-
+        // ------------------ Reservation ------------------
         public override Task<Empty> MakeReservation(ReservationRequest request, ServerCallContext context)
         {
             var trip = FromGrpcTrip(request.Trip);
-            try
+
+            if (trip.availableSeats < request.TicketCount)
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, "Not enough available seats."));
+
+            var reservation = new Reservation(request.ClientName, request.ClientPhone, request.TicketCount, trip);
+            reservationRepo.Save(reservation);
+            UpdateAvailableSeats(trip, trip.availableSeats - request.TicketCount);
+
+            Console.WriteLine("[MakeReservation] Notifying all logged-in users...");
+            foreach (var username in loggedSoftUsers.Keys)
             {
-                _service.MakeReservation(request.ClientName, request.ClientPhone, request.TicketCount, trip);
-                return Task.FromResult(new Empty());
+                Console.WriteLine("Notify: " + username);
+                // Aici în viitor poți trimite notificări reale dacă implementezi client streaming
             }
-            catch (MyException ex)
+
+            return Task.FromResult(new Empty());
+        }
+
+        private void UpdateAvailableSeats(model.Trip trip, int newAvailableSeats)
+        {
+            lock (this)
             {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+                trip.availableSeats = newAvailableSeats;
+                tripRepo.Update(trip);
             }
         }
 
-        // Helper: model.Trip -> GrpcContracts.Trip
+        // ------------------ Helpers ------------------
         private GrpcContracts.Trip ToGrpcTrip(model.Trip trip)
         {
             return new GrpcContracts.Trip
@@ -105,7 +127,6 @@ namespace server
             };
         }
 
-        // Helper: GrpcContracts.Trip -> model.Trip
         private model.Trip FromGrpcTrip(GrpcContracts.Trip grpcTrip)
         {
             return new model.Trip(
@@ -114,10 +135,7 @@ namespace server
                 grpcTrip.DepartureTime.ToDateTime(),
                 grpcTrip.Price,
                 grpcTrip.AvailableSeats
-            )
-            {
-                Id = grpcTrip.Id
-            };
+            ) { Id = grpcTrip.Id };
         }
     }
 }
