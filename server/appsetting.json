@@ -1,0 +1,9 @@
+﻿{
+  "ConnectionStrings": {
+    "turismDB": "Data Source=turism.db"
+  },
+  "AppSettings": {
+    "ip": "127.0.0.1",
+    "port": "55556"
+  }
+}

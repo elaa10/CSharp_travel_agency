@@ -1,0 +1,58 @@
+﻿syntax = "proto3";
+
+package grpc;
+
+option csharp_namespace = "GrpcContracts";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service TourismService {
+  rpc Login (SoftUser) returns (LoginResponse);
+  rpc Logout (SoftUser) returns (google.protobuf.Empty);
+  rpc GetAllTrips (google.protobuf.Empty) returns (TripList);
+  rpc SearchTripsByObjectiveAndTime (SearchTripRequest) returns (TripList);
+  rpc GetTripById (TripIdRequest) returns (Trip);
+  rpc MakeReservation (ReservationRequest) returns (google.protobuf.Empty);
+}
+
+message SoftUser {
+  int64 id = 1;
+  string username = 2;
+  string password = 3;
+}
+
+message LoginResponse {
+  string message = 1;
+}
+
+message Trip {
+  int64 id = 1;
+  string transportCompany = 2;
+  string touristObjective = 3;
+  int32 availableSeats = 4;
+  double price = 5;
+  google.protobuf.Timestamp departureTime = 6;
+}
+
+message TripList {
+  repeated Trip trips = 1;
+}
+
+message TripIdRequest {
+  int64 id = 1;
+}
+
+message SearchTripRequest {
+  string objective = 1;
+  google.protobuf.Timestamp date = 2;
+  int32 startHour = 3;
+  int32 endHour = 4;
+}
+
+message ReservationRequest {
+  string clientName = 1;
+  string clientPhone = 2;
+  int32 ticketCount = 3;
+  Trip trip = 4;
+}

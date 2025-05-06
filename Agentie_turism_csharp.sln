@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "services", "services\servic
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "clientWinFormApp", "clientWinFormApp\clientWinFormApp.csproj", "{36FD78A4-BECA-4168-9D9B-5B5D39900CC9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrpcContracts", "GrpcContracts\GrpcContracts.csproj", "{72DA29D3-9A16-40B5-B1C9-6575410E322F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{36FD78A4-BECA-4168-9D9B-5B5D39900CC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{36FD78A4-BECA-4168-9D9B-5B5D39900CC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{36FD78A4-BECA-4168-9D9B-5B5D39900CC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72DA29D3-9A16-40B5-B1C9-6575410E322F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72DA29D3-9A16-40B5-B1C9-6575410E322F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72DA29D3-9A16-40B5-B1C9-6575410E322F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72DA29D3-9A16-40B5-B1C9-6575410E322F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

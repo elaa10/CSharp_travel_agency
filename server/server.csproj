@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\GrpcContracts\GrpcContracts.csproj" />
       <ProjectReference Include="..\networking\networking.csproj" />
       <ProjectReference Include="..\persistence\persistence.csproj" />
       <ProjectReference Include="..\services\services.csproj" />
@@ -23,6 +24,16 @@
       <None Update="log4net.config">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Grpc.Net.Client" Version="2.52.0" />
+        <PackageReference Include="Grpc.AspNetCore" Version="2.52.0" />
+        <PackageReference Include="Google.Protobuf" Version="3.22.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Properties\" />
     </ItemGroup>
 
 
