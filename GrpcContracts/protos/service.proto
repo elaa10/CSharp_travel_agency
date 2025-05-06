@@ -14,6 +14,7 @@ service TourismService {
   rpc SearchTripsByObjectiveAndTime (SearchTripRequest) returns (TripList);
   rpc GetTripById (TripIdRequest) returns (Trip);
   rpc MakeReservation (ReservationRequest) returns (google.protobuf.Empty);
+  rpc ReservationNotifications (google.protobuf.Empty) returns (stream ReservationNotification);
 }
 
 message SoftUser {
@@ -55,4 +56,9 @@ message ReservationRequest {
   string clientPhone = 2;
   int32 ticketCount = 3;
   Trip trip = 4;
+}
+
+message ReservationNotification {
+  string message = 1;
+  int64 tripId = 2;
 }

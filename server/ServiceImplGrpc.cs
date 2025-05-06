@@ -98,8 +98,7 @@ namespace server
             UpdateAvailableSeats(trip, trip.availableSeats - request.TicketCount);
 
             Console.WriteLine("[MakeReservation] Notifying all clients...");
-
-            // ✅ Notifică toți observerii înregistrați
+            
             lock (observersLock)
             {
                 foreach (var observer in observers.ToList())
@@ -113,9 +112,7 @@ namespace server
                         });
                     }
                     catch
-                    {
-                        // Ignoră streamurile închise
-                    }
+                    { }
                 }
             }
 
@@ -163,11 +160,9 @@ namespace server
             {
                 observers.Add(responseStream);
             }
-
-            // Keep stream alive
             while (!context.CancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(1000); // Sleep to avoid busy wait
+                await Task.Delay(1000); 
             }
 
             lock (observersLock)
