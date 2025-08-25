@@ -71,8 +71,8 @@ namespace RestServices
             // 1. Create a new Trip
             var trip = new Trip
             {
-                TouristAttraction = "Castelul Peles",
-                TransportCompany = "PelesTrans",
+                TouristAttraction = "Castelul Bran",
+                TransportCompany = "BrasovTrans",
                 DepartureTime = new DateTime(2025, 7, 5, 8, 30, 0),
                 Price = 185.0,
                 AvailableSeats = 40
@@ -104,6 +104,17 @@ namespace RestServices
             // 5. Delete
             await DeleteTripAsync($"{BASE_URL}/{created.Id}");
             Console.WriteLine("Deleted trip with ID: " + created.Id);
+            
+            // 4. Get all
+            Console.WriteLine("All Trips:"); 
+            allTripsResponse = await client.GetAsync(BASE_URL);
+            if (allTripsResponse.IsSuccessStatusCode)
+            {
+                var json = await allTripsResponse.Content.ReadAsStringAsync();
+                var trips = JsonConvert.DeserializeObject<Trip[]>(json);
+                foreach (var t in trips)
+                    Console.WriteLine(t);
+            }
 
             // 6. Verify delete
             var afterDelete = await GetTripAsync($"{BASE_URL}/{created.Id}");
