@@ -11,7 +11,7 @@ This project simulates a multi-agency travel booking system. Several travel agen
 
 ## Technical Implementation
 
-- **Model and Persistence:** Java and C# implementations with relational databases. ORM tools like **Hibernate** were used for at least two entities. Repository classes are logged, and database connection details are retrieved from configuration files.  
-- **Services & GUI:** Controllers call service methods, which interact with repositories. Desktop GUIs were developed for both Java and C#.  
-- **Networking:** Implemented client-server architecture with sockets and threads. Clients receive automatic updates when trip data changes. The server was implemented in one language (Java or C#) and clients in the other, demonstrating interoperability.  
+- **Model and Persistence:** Java and C# implementations with relational databases (SQLite). ORM tools (Hibernate) were used. Repository classes are logged, and database connection details are retrieved from configuration files.  
+- **Services & GUI:** Controllers call service methods, which interact with repositories. Desktop GUIs were developed for both Java (with JavaFx) and C# (with Windows Forms).  
+- **Networking:** Implemented client-server architecture with sockets and threads. Clients receive automatic updates when trip data changes. 
 - **REST API & Web Client:** REST services were developed for the core entities, and a web client was implemented with JWT authentication for secure client access.
